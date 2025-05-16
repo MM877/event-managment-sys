@@ -96,4 +96,19 @@ class Event extends Model
         return $this->belongsToMany(User::class, 'event_user', 'event_id', 'user_id')
                     ->withTimestamps();
     }
+
+    // Define tickets relationship
+    public function tickets()
+    {
+        return $this->hasMany(Ticket::class);
+    }
+    
+    // Get remaining tickets count
+    public function getRemainingTicketsAttribute()
+    {
+        $totalTickets = $this->num_tickets ?: 0;
+        $bookedTickets = $this->tickets()->where('status', 'booked')->sum('quantity');
+        
+        return max(0, $totalTickets - $bookedTickets);
+    }
 }

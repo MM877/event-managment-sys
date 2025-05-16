@@ -98,6 +98,25 @@
                             </div>
                         </div>
                         
+                        <!-- Ticket Quantity Field -->
+                        <div>
+                            <x-input-label for="num_tickets" :value="__('Number of Available Tickets')" />
+                            <x-text-input id="num_tickets" class="block mt-1 w-full" type="number" name="num_tickets" :value="old('num_tickets', $event->num_tickets)" min="0" placeholder="Enter the number of available tickets" />
+                            @php
+                                $bookedTickets = $event->tickets()->where('status', 'booked')->sum('quantity') ?? 0;
+                            @endphp
+                            <p class="text-sm text-gray-500 mt-1">
+                                {{ __('Enter the total number of tickets available for this event.') }}
+                                @if($bookedTickets > 0)
+                                    <br>
+                                    <span class="text-amber-500">
+                                        {{ __('Note: ') . $bookedTickets . __(' tickets have already been booked.') }}
+                                    </span>
+                                @endif
+                            </p>
+                            <x-input-error :messages="$errors->get('num_tickets')" class="mt-2" />
+                        </div>
+                        
                         <!-- Tags Selection Field -->
                         <div>
                             <x-input-label for="tags" :value="__('Tags')" />

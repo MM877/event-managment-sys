@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use App\Models\SavedEvent;
+use Illuminate\Support\Facades\Auth;
 
 class SavedEventController extends Controller
 {
@@ -12,7 +14,12 @@ class SavedEventController extends Controller
      */
     public function index()
     {
-        return view('saved-events.index');
+        $savedEvents = SavedEvent::where('user_id', Auth::id())
+            ->with('event', 'event.country')
+            ->latest()
+            ->get();
+            
+        return view('saved-events.index', compact('savedEvents'));
     }
 
     /**
@@ -28,7 +35,23 @@ class SavedEventController extends Controller
      */
     public function store(Request $request)
     {
-        // Store logic
+        $validated = $request->validate([
+            'event_id' => 'required|exists:events,id',
+        ]);
+
+        // Check if already saved
+        $existing = SavedEvent::where('user_id', Auth::id())
+            ->where('event_id', $validated['event_id'])
+            ->first();
+
+        if (!$existing) {
+            SavedEvent::create([
+                'user_id' => Auth::id(),
+                'event_id' => $validated['event_id'],
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'Event saved successfully');
     }
 
     /**
@@ -60,6 +83,12 @@ class SavedEventController extends Controller
      */
     public function destroy(string $id)
     {
-        // Delete logic
+        $savedEvent = SavedEvent::where('id', $id)
+            ->where('user_id', Auth::id())
+            ->firstOrFail();
+            
+        $savedEvent->delete();
+        
+        return redirect()->back()->with('success', 'Event removed from saved list');
     }
 }

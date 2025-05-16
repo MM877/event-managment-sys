@@ -13,51 +13,75 @@ class AttendingController extends Controller
      */
     public function index()
     {
-        // Return view
-        return view('saved-events.index', [
-            'events' => Event::whereHas('attendees', function ($query) {
-                $query->where('user_id', Auth::id());
-            })->get(),
-        ]);
+        // Return view with events the user is attending
+        $events = Event::whereHas('attendees', function ($query) {
+            $query->where('user_id', Auth::id());
+        })->latest()->paginate(10);
+        
+        return view('attending.index', compact('events'));
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store()
+    public function store(Request $request)
     {
-        // Store logic
+        $request->validate([
+            'event_id' => 'required|exists:events,id',
+        ]);
+        
+        $event = Event::findOrFail($request->event_id);
+        
+        // Check if user is already attending
+        if (!$event->attendees()->where('user_id', Auth::id())->exists()) {
+            $event->attendees()->attach(Auth::id());
+            $message = 'You are now attending this event.';
+            $success = true;
+        } else {
+            $message = 'You are already attending this event.';
+            $success = false;
+        }
+        
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => $success,
+                'message' => $message,
+                'attending_count' => $event->attendees()->count()
+            ]);
+        }
+        
+        return redirect()->back()->with('success', $message);
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy()
+    public function destroy(Request $request)
     {
-        // Delete logic
-    }
-
-    public function attend(Event $event)
-    {
-        $event->attendees()->attach(Auth::id());
-
-        return response()->json([
-            'success' => true,
-            'message' => 'You are now attending this event.',
+        $request->validate([
+            'event_id' => 'required|exists:events,id',
         ]);
         
-return redirect()->route('events.show', $event->id)
-    ->with('success', 'Event updated successfully.');
-
-    }
-
-    public function cancelAttendance(Event $event)
-    {
-        $event->attendees()->detach(Auth::id());
-
-        return response()->json([
-            'success' => true,
-            'message' => 'You have canceled your attendance.',
-        ]);
+        $event = Event::findOrFail($request->event_id);
+        
+        // Check if user is attending and detach
+        if ($event->attendees()->where('user_id', Auth::id())->exists()) {
+            $event->attendees()->detach(Auth::id());
+            $message = 'You have canceled your attendance.';
+            $success = true;
+        } else {
+            $message = 'You were not attending this event.';
+            $success = false;
+        }
+        
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => $success,
+                'message' => $message,
+                'attending_count' => $event->attendees()->count()
+            ]);
+        }
+        
+        return redirect()->back()->with('success', $message);
     }
 }

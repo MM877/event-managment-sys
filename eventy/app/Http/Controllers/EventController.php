@@ -15,11 +15,27 @@ class EventController extends Controller
     /**
      * Display a listing of the events.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $events = Event::latest()->paginate(10);
-        $countries = Country::all();
-        $tags = Tag::all();
+        $query = Event::query();
+        
+        // Apply country filter if selected
+        if ($request->filled('country_id')) {
+            $query->where('country_id', $request->country_id);
+        }
+        
+        // Apply tag filter if selected
+        if ($request->filled('tag_id')) {
+            $query->whereHas('tags', function ($q) use ($request) {
+                $q->where('tags.id', $request->tag_id);
+            });
+        }
+        
+        $events = $query->latest()->paginate(10)->withQueryString();
+        
+        $countries = Country::orderBy('name')->get();
+        $tags = Tag::orderBy('name')->get();
+        
         return view('events.index', compact('events', 'countries', 'tags'));
     }
 
@@ -34,8 +50,8 @@ class EventController extends Controller
                 ->with('error', 'You must be logged in to create an event.');
         }
         
-        $countries = Country::all();
-        $tags = Tag::all();
+        $countries = Country::orderBy('name')->get();
+        $tags = Tag::orderBy('name')->get();
         return view('events.create', compact('countries', 'tags'));
     }
 
@@ -58,6 +74,7 @@ class EventController extends Controller
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
+            'num_tickets' => 'nullable|integer|min:0',
         ]);
 
         // Handle image upload
@@ -76,6 +93,7 @@ class EventController extends Controller
             'user_id' => Auth::id(),
             'start_date' => $validated['start_date'],
             'end_date' => $validated['end_date'],
+            'num_tickets' => $validated['num_tickets'] ?? null,
         ]);
 
         // Process tags
@@ -125,8 +143,8 @@ class EventController extends Controller
                 ->with('error', 'You are not authorized to edit this event.');
         }
         
-        $countries = Country::all();
-        $tags = Tag::all();
+        $countries = Country::orderBy('name')->get();
+        $tags = Tag::orderBy('name')->get();
         
         return view('events.edit', compact('event', 'countries', 'tags'));
     }
@@ -151,6 +169,7 @@ class EventController extends Controller
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
+            'num_tickets' => 'nullable|integer|min:0',
         ]);
 
         // Handle image upload
@@ -174,6 +193,7 @@ class EventController extends Controller
             'image' => $imagePath,
             'start_date' => $validated['start_date'],
             'end_date' => $validated['end_date'],
+            'num_tickets' => $validated['num_tickets'] ?? $event->num_tickets,
         ]);
 
         // Process tags
@@ -237,7 +257,7 @@ class EventController extends Controller
                       ->latest()
                       ->paginate(10);
                       
-        return view('my-events.index', compact('events'));
+        return view('events.my-events', compact('events'));
     }
 
     /**

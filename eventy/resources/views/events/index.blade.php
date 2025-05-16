@@ -24,6 +24,54 @@
                 </div>
             @endif
 
+            <!-- Filters -->
+            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg mb-6">
+                <div class="p-6 text-gray-900 dark:text-gray-100">
+                    <h3 class="text-lg font-medium mb-4">{{ __('Filter Events') }}</h3>
+                    
+                    <form action="{{ route('events.index') }}" method="GET" class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Country Filter -->
+                            <div>
+                                <label for="country_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300">{{ __('Country') }}</label>
+                                <select id="country_id" name="country_id" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                                    <option value="">{{ __('All Countries') }}</option>
+                                    @foreach(\App\Models\Country::orderBy('name')->get() as $country)
+                                        <option value="{{ $country->id }}" {{ request('country_id') == $country->id ? 'selected' : '' }}>
+                                            {{ $country->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            
+                            <!-- Tag Filter -->
+                            <div>
+                                <label for="tag_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300">{{ __('Tag') }}</label>
+                                <select id="tag_id" name="tag_id" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                                    <option value="">{{ __('All Tags') }}</option>
+                                    @foreach(\App\Models\Tag::orderBy('name')->get() as $tag)
+                                        <option value="{{ $tag->id }}" {{ request('tag_id') == $tag->id ? 'selected' : '' }}>
+                                            {{ $tag->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="flex justify-end">
+                            <button type="submit" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:border-indigo-900 focus:ring ring-indigo-300 disabled:opacity-25 transition ease-in-out duration-150">
+                                {{ __('Filter') }}
+                            </button>
+                            @if(request('country_id') || request('tag_id'))
+                                <a href="{{ route('events.index') }}" class="ml-3 inline-flex items-center px-4 py-2 bg-gray-200 dark:bg-gray-700 border border-transparent rounded-md font-semibold text-xs text-gray-700 dark:text-gray-300 uppercase tracking-widest hover:bg-gray-300 dark:hover:bg-gray-600 active:bg-gray-400 dark:active:bg-gray-500 focus:outline-none focus:border-gray-900 focus:ring ring-gray-300 disabled:opacity-25 transition ease-in-out duration-150">
+                                    {{ __('Clear') }}
+                                </a>
+                            @endif
+                        </div>
+                    </form>
+                </div>
+            </div>
+
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg mb-6">
                 <div class="p-6 text-gray-900 dark:text-gray-100">
                     <h3 class="text-lg font-medium mb-4">{{ __('Discover Events') }}</h3>
@@ -68,6 +116,35 @@
                                             </svg>
                                             <span>{{ __('By') }} {{ $event->user->name }}</span>
                                         </div>
+                                        
+                                        @if($event->tags->count() > 0)
+                                        <div class="flex flex-wrap gap-1 mb-3">
+                                            @foreach($event->tags->take(3) as $tag)
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-800 dark:text-indigo-100">
+                                                    {{ $tag->name }}
+                                                </span>
+                                            @endforeach
+                                            @if($event->tags->count() > 3)
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                                                    +{{ $event->tags->count() - 3 }}
+                                                </span>
+                                            @endif
+                                        </div>
+                                        @endif
+                                        
+                                        @if($event->num_tickets)
+                                        <div class="flex items-center text-sm mb-3">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+                                            </svg>
+                                            @php
+                                                $remainingTickets = $event->remainingTickets;
+                                            @endphp
+                                            <span class="{{ $remainingTickets > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400' }}">
+                                                {{ $remainingTickets > 0 ? $remainingTickets . ' tickets available' : 'Sold out' }}
+                                            </span>
+                                        </div>
+                                        @endif
                                         
                                         <div class="mt-4 flex justify-between items-center">
                                             <a href="{{ route('events.show', $event) }}" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 text-sm font-medium">
