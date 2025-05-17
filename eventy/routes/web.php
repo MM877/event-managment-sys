@@ -73,5 +73,7 @@ require __DIR__.'/auth.php';
 Route::get('/events/{event}/gallery', [GalleryController::class, 'index'])->name('events.gallery.index');
 Route::post('/events/{event}/gallery', [GalleryController::class, 'store'])->name('events.gallery.store');
 
+Route::get('/likes/find', [LikeController::class, 'findByEventId']);
+
 
 

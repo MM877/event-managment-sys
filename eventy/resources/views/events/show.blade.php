@@ -271,15 +271,46 @@ document.addEventListener('DOMContentLoaded', function() {
             const likesCount = document.getElementById('likes-count');
             
             try {
-                const url = isLiked ? '/likes/destroy' : '/likes';
+                let url, method, body;
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                
+                if (isLiked) {
+                    // For unlike, we need to find the like ID first
+                    const findLikeResponse = await fetch(`/likes/find?event_id=${eventId}`, {
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Accept': 'application/json',
+                        },
+                    });
+                    
+                    if (!findLikeResponse.ok) {
+                        throw new Error('Could not find like record');
+                    }
+                    
+                    const likeData = await findLikeResponse.json();
+                    url = `/likes/${likeData.like_id}`;
+                    method = 'POST';
+                    body = JSON.stringify({
+                        _method: 'DELETE',
+                        _token: csrfToken
+                    });
+                } else {
+                    url = '/likes';
+                    method = 'POST';
+                    body = JSON.stringify({
+                        event_id: eventId,
+                        _token: csrfToken
+                    });
+                }
+
                 const response = await fetch(url, {
-                    method: 'POST',
+                    method: method,
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'X-CSRF-TOKEN': csrfToken,
                         'Accept': 'application/json',
                     },
-                    body: JSON.stringify({ event_id: eventId }),
+                    body: body
                 });
                 
                 const data = await response.json();

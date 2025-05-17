@@ -70,9 +70,43 @@ class LikeController extends Controller
     }
 
     /**
+     * Find a like by event ID for the authenticated user.
+     */
+    public function findByEventId(Request $request)
+    {
+        // Check if user is authenticated
+        if (!Auth::check()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You must be logged in to perform this action'
+            ], 401);
+        }
+        
+        $request->validate([
+            'event_id' => 'required|exists:events,id',
+        ]);
+        
+        $like = Like::where('event_id', $request->event_id)
+                   ->where('user_id', Auth::id())
+                   ->first();
+                   
+        if (!$like) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Like not found'
+            ], 404);
+        }
+        
+        return response()->json([
+            'success' => true,
+            'like_id' => $like->id
+        ]);
+    }
+
+    /**
      * Remove the specified like from storage.
      */
-    public function destroy(Request $request)
+    public function destroy(Like $like)
     {
         // Check if user is authenticated
         if (!Auth::check()) {
@@ -82,30 +116,21 @@ class LikeController extends Controller
             ], 401);
         }
         
-        $request->validate([
-            'event_id' => 'required|exists:events,id',
-        ]);
-        
-        $event = Event::findOrFail($request->event_id);
-        
-        // Find and delete the like
-        $like = Like::where('event_id', $event->id)
-                   ->where('user_id', Auth::id())
-                   ->first();
-                   
-        if (!$like) {
+        // Check if the user owns this like
+        if ($like->user_id !== Auth::id()) {
             return response()->json([
                 'success' => false,
-                'message' => 'You have not liked this event yet'
-            ]);
+                'message' => 'Unauthorized action'
+            ], 403);
         }
         
+        $event = $like->event;
         $like->delete();
         
         // Return response with updated like count
         $likeCount = $event->likes()->count();
         
-        if ($request->wantsJson()) {
+        if (request()->wantsJson()) {
             return response()->json([
                 'success' => true,
                 'likes_count' => $likeCount,

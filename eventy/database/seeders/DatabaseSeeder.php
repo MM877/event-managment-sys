@@ -25,6 +25,9 @@ class DatabaseSeeder extends Seeder
         $this->createCountries();
         $this->createCities();
         $this->createTags();
+        
+        // Seed test events for booking
+        $this->call(TestEventSeeder::class);
     }
 
     public function createCountries()

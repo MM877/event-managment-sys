@@ -58,11 +58,11 @@
                                                 {{ $ticket->created_at->format('F j, Y') }}
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap">
-                                                @if($ticket->status === 'booked' && $ticket->event->start_date > now())
+                                                @if($ticket->status === 'booked' && $ticket->event->start_date > now()->subHours(1))
                                                     <form action="{{ route('tickets.cancel', $ticket) }}" method="POST" onsubmit="return confirm('Are you sure you want to cancel this booking?');">
                                                         @csrf
                                                         @method('PATCH')
-                                                        <button type="submit" class="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300 text-sm">
+                                                        <button type="submit" class="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150">
                                                             Cancel
                                                         </button>
                                                     </form>

@@ -6,6 +6,7 @@ use App\Models\Event;
 use App\Models\Ticket;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class TicketController extends Controller
 {
@@ -89,17 +90,29 @@ class TicketController extends Controller
                 ->with('error', 'You are not authorized to cancel this booking.');
         }
 
-        // Check if the ticket can be canceled (e.g., event hasn't started yet)
+        // Check if the ticket can be canceled - allow cancellation up to event start
         $event = $ticket->event;
-        if ($event->start_date <= now()) {
+        if ($event->start_date < now()->subHours(1)) {
             return redirect()->route('tickets.index')
                 ->with('error', 'Cannot cancel tickets for an event that has already started.');
         }
 
-        // Update ticket status
-        $ticket->update(['status' => 'cancelled']);
-
-        return redirect()->route('tickets.index')
-            ->with('success', 'Ticket booking cancelled successfully.');
+        // Update ticket status using a transaction for safety
+        try {
+            DB::beginTransaction();
+            
+            $ticket->status = 'cancelled';
+            $ticket->save();
+            
+            DB::commit();
+            
+            return redirect()->route('tickets.index')
+                ->with('success', 'Ticket booking cancelled successfully.');
+        } catch (\Exception $e) {
+            DB::rollback();
+            
+            return redirect()->route('tickets.index')
+                ->with('error', 'Failed to cancel ticket. Please try again.');
+        }
     }
 } 
