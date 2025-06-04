@@ -17,6 +17,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->integer('quantity');
             $table->string('status')->default('booked'); // booked, cancelled, etc.
+            $table->string('ticket_code')->unique();
             $table->timestamps();
         });
     }

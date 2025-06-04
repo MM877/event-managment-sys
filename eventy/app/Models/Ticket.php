@@ -14,7 +14,17 @@ class Ticket extends Model
         'user_id',
         'quantity',
         'status',
+        'ticket_code',
     ];
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($ticket) {
+            $ticket->ticket_code = strtoupper(uniqid('TKT-'));
+        });
+    }
 
     /**
      * Get the event that owns the ticket.
